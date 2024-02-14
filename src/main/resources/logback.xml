@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<jmxConfigurator />
+	<contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+		<resetJUL>true</resetJUL>
+	</contextListener>
+	
+	<timestamp key="byHour" datePattern="HH_mm_ss" />
+	
+	
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{MM-dd HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) [%.7thread] %logger{5}.%M %L- %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>/tmp/reportgenaration/log-${byHour}.txt</file>
+		<append>true</append>
+		<encoder>
+			<pattern>%d{MM-dd HH:mm:ss} %-5level [%.7thread] %logger{5}.%M %L - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+	
+	<appender name="MYSIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<key>sifting_discriminator_string</key>
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		
+		
+		<!-- https://coderanch.com/t/650051/java/logback-SiftingAppender-generated-log-files -->
+		<timeout>30 seconds</timeout>
+		
+		
+		<sift>
+			<appender name="FILE-${sifting_discriminator_string}"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <file>/app/cms_logs_uat/${sifting_discriminator_string}/current.log</file> -->
+				
+				<!-- Compression is not supported in prudent mode. -->
+				<!-- <prudent>true</prudent> -->
+				
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<!-- daily rollover -->
+					<fileNamePattern>/tmp/finarya/${sifting_discriminator_string}/%d{yyyy-MM-dd-HH}.zip</fileNamePattern>
+					<!-- Per minute rollover -->
+					<!-- <fileNamePattern>/app/cms_logs_uat/${sifting_discriminator_string}/%d{yyyy-MM-dd-HH-mm}.zip</fileNamePattern> -->
+					<maxHistory>7</maxHistory>
+				</rollingPolicy>
+
+				<encoder>
+					<pattern>S %d{MM-dd HH:mm:ss} %-3level [%.7thread] %logger{5}.%M %L - %msg%n
+					</pattern>
+					<!-- 
+					<pattern>SIFT_APPENDER_DAILY_ROLLOVER %relative [%thread] %-5level %logger{35} - %msg%n
+					</pattern>
+					 -->
+				</encoder>
+			</appender>
+		</sift>
+	</appender>
+	
+	<logger name="org.springframework.jdbc.core.JdbcTemplate" level="ERROR" additivity="false">
+		<appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="MYSIFT" />
+	</logger>
+	
+	<logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="ERROR" additivity="false">
+		<appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="MYSIFT" />
+	</logger>
+	
+	<logger name="org.hibernate.SQL" level="ERROR" additivity="false">
+		<appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="MYSIFT" />
+	</logger>
+	
+	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="ERROR" additivity="false">
+		<appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="MYSIFT" />
+	</logger>
+	
+	
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="MYSIFT" />
+        
+    </root>
+</configuration>

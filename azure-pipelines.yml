@@ -1,0 +1,96 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+      - group: Adhoc_aws_service_UAT
+      - name: aws_access_key
+        value: $[variables.aws_access_key_id]
+      - name: aws_secret_key
+        value: $[variables.aws_secret_key_id]
+      - name: aws_region
+        value: 'ap-south-1'
+      - name: aws_account
+        value: $[variables.aws_account_id]
+      - name: ecr_repo_name
+        value: 'ecr-adhocstatement-uat-1'
+      - name: registry_name
+        value: '$(aws_account).dkr.ecr.$(aws_region).amazonaws.com/$(ecr_repo_name)'
+      - name: Tag
+        value: $(Build.BuildId)_UAT
+
+jobs:
+  - job:
+    workspace:
+      clean: all
+    displayName: "UAT_Build"
+
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo $(aws_access_key)
+          echo $(aws_region)
+          echo $(aws_secret_key)
+          echo $(aws_account)
+          echo $(Tag)
+          echo $(registry_name)
+         
+         
+    # - task: Maven@3
+    #   inputs:
+    #     mavenPomFile: 'pom.xml'
+    #     mavenOptions: '-Xmx3072m'
+    #     javaHomeOption: 'JDKVersion'
+    #     jdkVersionOption: '1.8'
+    #     jdkArchitectureOption: 'x64'
+    #     publishJUnitResults: true
+    #     testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    #     goals: 'package'
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+              export AWS_ACCESS_KEY_ID=$(aws_access_key)
+              export AWS_SECRET_ACCESS_KEY=$(aws_secret_key)
+              export AWS_DEFAULT_REGION=$(aws_region)
+              aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 147642600964.dkr.ecr.ap-south-1.amazonaws.com
+              aws configure list --output table
+    
+    - task: Docker@2
+      displayName: Build docker image
+      inputs:
+        repository: '$(registry_name)'
+        command: 'buildAndPush'
+        Dockerfile: 'Dockerfile'
+        tags: '$(Tag)'
+    
+    # - task: replacetokens@5
+    #   inputs:
+    #     rootDirectory: '$(system.defaultworkingdirectory)'
+    #     targetFiles: 'adhoc.yaml'
+    #     encoding: 'auto'
+    #     tokenPattern: 'doublebraces'
+    #     writeBOM: true
+    #     actionOnMissing: 'warn'
+    #     keepToken: false
+    #     actionOnNoFiles: 'continue'
+    #     enableTransforms: false
+    #     enableRecursion: false
+    #     useLegacyPattern: false
+    #     enableTelemetry: true
+  
+    # - task: CopyFiles@2
+    #   inputs:
+    #     SourceFolder: '$(system.defaultworkingdirectory)'
+    #     Contents: 'adhoc.yaml'
+    #     TargetFolder: '$(build.artifactstagingdirectory)'
+        
+    # - task: PublishBuildArtifacts@1
+    #   inputs:
+    #     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    #     ArtifactName: 'ADHOC'
+    #     publishLocation: 'Container'
+
